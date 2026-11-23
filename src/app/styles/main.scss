@@ -1,0 +1,11 @@
+@use './variables' as *;
+@use './reset';
+
+#app {
+  min-height: 100vh;
+}
+
+.container {
+  width: min(100% - 40px, $container-width);
+  margin-inline: auto;
+}

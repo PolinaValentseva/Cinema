@@ -1,0 +1,25 @@
+$font-family: 'Inter', sans-serif;
+
+$color-background: #ffffff;
+$color-text: #171717;
+$color-text-secondary: #777777;
+$color-primary: #6c5ce7;
+
+$container-width: 1200px;
+
+$transition-default: 0.2s ease;
+
+:root {
+    --font-family: 'Inter', sans-serif;
+
+    --color-background: #ffffff;
+    --color-text: #171717;
+    --color-text-secondary: #777777;
+    --color-primary: #6c5ce7;
+    --color-dark: #1E1B1C;
+    --color-white: #ffffff;
+
+    --container-width: 1200px;
+
+    --transition-default: 0.2s ease;
+}
