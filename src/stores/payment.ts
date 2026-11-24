@@ -4,7 +4,14 @@ import { ref } from 'vue';
 
 import type { Order, Payment, PaymentMethod } from '@/types';
 
-import { orderApi, paymentApi } from '@/services/mock-api';
+import {
+  authApi,
+  bankCardApi,
+  movieApi,
+  orderApi,
+  paymentApi,
+  sessionApi,
+} from '@/services/mock-api';
 
 import { useTicketsStore } from './tickets';
 
@@ -38,6 +45,34 @@ export const usePaymentStore = defineStore('payment', () => {
     let order: Order | null = null;
 
     try {
+      const cards = await bankCardApi.getAll(data.userId);
+
+      if (data.method === 'bank-card' && cards.length === 0) {
+        throw new Error(
+          'Добавьте банковскую карту в личном кабинете, чтобы оплатить заказ.',
+        );
+      }
+
+      if (data.method === 'pushkin-card') {
+        const user = await authApi.getUserById(data.userId);
+
+        if (!user?.isPushkinCardConnected) {
+          throw new Error('Сначала подключите Пушкинскую карту в личном кабинете.');
+        }
+
+        const session = await sessionApi.getById(data.sessionId);
+
+        if (!session) {
+          throw new Error('Сеанс не найден.');
+        }
+
+        const movie = await movieApi.getById(session.movieId);
+
+        if (!movie?.isPushkinCardAvailable) {
+          throw new Error('Этот фильм нельзя оплатить Пушкинской картой.');
+        }
+      }
+
       // 1. Создаём заказ.
       order = await orderApi.create({
         userId: data.userId,
@@ -54,6 +89,8 @@ export const usePaymentStore = defineStore('payment', () => {
           order.id,
           data.totalPrice,
           data.method,
+          data.userId,
+          data.sessionId,
         );
 
         currentPayment.value = payment;

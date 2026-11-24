@@ -7,5 +7,6 @@ export interface Movie {
   poster: string;
   duration: number;
   ageRating: string;
+  isPushkinCardAvailable: boolean;
   genres: string[];
 }

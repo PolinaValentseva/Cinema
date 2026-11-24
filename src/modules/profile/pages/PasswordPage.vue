@@ -1,7 +1,7 @@
 
 <script setup lang="ts">
-import { ChevronLeft, Eye, EyeOff } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ChevronLeft, Eye, EyeOff, MailCheck } from 'lucide-vue-next';
+import { computed, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAuthStore } from '@/stores/auth';
@@ -21,7 +21,70 @@ const successMessage = ref('');
 const errorMessage = ref('');
 const isSubmitting = ref(false);
 
-async function handleSubmit() {
+// Подтверждение смены пароля
+const showVerificationModal = ref(false);
+const verificationCode = ref('');
+const enteredCode = ref('');
+const remainingSeconds = ref(120);
+
+const formattedTime = computed(() => {
+  const minutes = Math.floor(remainingSeconds.value / 60);
+  const seconds = remainingSeconds.value % 60;
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+});
+
+let verificationTimer: ReturnType<typeof setInterval> | undefined;
+
+function startVerificationTimer(): void {
+  if (verificationTimer) {
+    clearInterval(verificationTimer);
+  }
+
+  remainingSeconds.value = 120;
+
+  verificationTimer = setInterval(() => {
+    if (remainingSeconds.value > 0) {
+      remainingSeconds.value--;
+    }
+
+    if (remainingSeconds.value === 0 && verificationTimer) {
+      clearInterval(verificationTimer);
+      verificationTimer = undefined;
+    }
+  }, 1000);
+}
+
+function resendVerificationCode(): void {
+  verificationCode.value = String(
+    Math.floor(100000 + Math.random() * 900000),
+  );
+
+  enteredCode.value = '';
+  errorMessage.value = '';
+
+  startVerificationTimer();
+}
+
+function closeVerificationModal(): void {
+  showVerificationModal.value = false;
+  enteredCode.value = '';
+  verificationCode.value = '';
+  remainingSeconds.value = 120;
+
+  if (verificationTimer) {
+    clearInterval(verificationTimer);
+    verificationTimer = undefined;
+  }
+}
+
+onUnmounted(() => {
+  if (verificationTimer) {
+    clearInterval(verificationTimer);
+  }
+});
+
+async function handleSubmit(): Promise<void> {
   successMessage.value = '';
   errorMessage.value = '';
 
@@ -45,6 +108,27 @@ async function handleSubmit() {
     return;
   }
 
+  verificationCode.value = String(
+    Math.floor(100000 + Math.random() * 900000),
+  );
+
+  enteredCode.value = '';
+  startVerificationTimer();
+  showVerificationModal.value = true;
+}
+
+async function confirmPasswordChange(): Promise<void> {
+  if (remainingSeconds.value <= 0) {
+    errorMessage.value = 'Срок действия кода истёк. Запросите новый код.';
+    return;
+  }
+
+  if (enteredCode.value !== verificationCode.value) {
+    errorMessage.value = 'Неверный код подтверждения';
+    return;
+  }
+
+  errorMessage.value = '';
   isSubmitting.value = true;
 
   try {
@@ -58,9 +142,13 @@ async function handleSubmit() {
     currentPassword.value = '';
     newPassword.value = '';
     confirmPassword.value = '';
+
+    closeVerificationModal();
   } catch (err) {
     errorMessage.value =
-      err instanceof Error ? err.message : 'Не удалось изменить пароль';
+      err instanceof Error
+        ? err.message
+        : 'Не удалось изменить пароль';
   } finally {
     isSubmitting.value = false;
   }
@@ -174,6 +262,95 @@ async function handleSubmit() {
       </button>
     </form>
   </main>
+
+  <Transition name="verification">
+    <div
+      v-if="showVerificationModal"
+      class="verification-overlay"
+      @click.self="closeVerificationModal"
+    >
+      <section
+        class="verification-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="verification-title"
+      >
+        <button
+          type="button"
+          class="verification-modal__close"
+          aria-label="Закрыть"
+          @click="closeVerificationModal"
+        >
+          ×
+        </button>
+
+        <div class="verification-modal__icon">
+          <MailCheck :size="36" />
+        </div>
+
+        <h2 id="verification-title">
+          Подтверждение смены пароля
+        </h2>
+
+        <p class="verification-modal__description">
+          Введите шестизначный код подтверждения.
+        </p>
+
+        <div class="verification-modal__demo">
+          <span>Демонстрационный код:</span>
+          <strong>{{ verificationCode }}</strong>
+        </div>
+
+        <input
+          v-model="enteredCode"
+          class="verification-modal__input"
+          type="text"
+          inputmode="numeric"
+          maxlength="6"
+          placeholder="000000"
+          autocomplete="one-time-code"
+          @input="enteredCode = enteredCode.replace(/\D/g, '')"
+        />
+
+        <p
+          v-if="errorMessage"
+          class="verification-modal__error"
+        >
+          {{ errorMessage }}
+        </p>
+
+        <p class="verification-modal__timer">
+          Код действителен ещё {{ formattedTime }}
+        </p>
+
+        <button
+          v-if="remainingSeconds === 0"
+          type="button"
+          class="verification-modal__resend"
+          @click="resendVerificationCode"
+        >
+          Получить новый код
+        </button>
+
+        <button
+          type="button"
+          class="verification-modal__submit"
+          :disabled="enteredCode.length !== 6 || isSubmitting"
+          @click="confirmPasswordChange"
+        >
+          {{ isSubmitting ? 'Сохраняем...' : 'Подтвердить' }}
+        </button>
+
+        <button
+          type="button"
+          class="verification-modal__cancel"
+          @click="closeVerificationModal"
+        >
+          Отмена
+        </button>
+      </section>
+    </div>
+  </Transition>
 </template>
 
 <style scoped lang="scss">
@@ -318,6 +495,117 @@ async function handleSubmit() {
     opacity: 0.6;
     cursor: not-allowed;
   }
+}
+
+.verification-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(5px);
+}
+
+.verification-modal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border-radius: 20px;
+  background: #fff;
+  color: #171717;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.verification-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  border: none;
+  background: none;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.verification-modal__icon {
+  margin-bottom: 16px;
+  font-size: 36px;
+}
+
+.verification-modal h2 {
+  margin-bottom: 10px;
+  font-size: 22px;
+}
+
+.verification-modal__description {
+  margin-bottom: 20px;
+  color: #777;
+}
+
+.verification-modal__demo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f2f2f2;
+}
+
+.verification-modal__demo strong {
+  font-size: 28px;
+  letter-spacing: 6px;
+}
+
+.verification-modal__input {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 22px;
+  text-align: center;
+  letter-spacing: 8px;
+}
+
+.verification-modal__timer,
+.verification-modal__error {
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.verification-modal__error {
+  color: #d33;
+}
+
+.verification-modal__submit,
+.verification-modal__cancel,
+.verification-modal__resend {
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.verification-modal__submit {
+  background: #171717;
+  color: #fff;
+}
+
+.verification-modal__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.verification-modal__cancel,
+.verification-modal__resend {
+  background: #f1f1f1;
+  color: #171717;
 }
 
 @media (max-width: 600px) {

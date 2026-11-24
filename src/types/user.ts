@@ -4,6 +4,7 @@ export interface User {
   id: ID;
   name: string;
   email: string;
+  isPushkinCardConnected: boolean;
 }
 
 export interface UserCredentials {
@@ -17,4 +18,6 @@ export interface RegisterUserData {
   password: string;
 }
 
-export type UpdateUserData = Partial<Pick<User, 'name' | 'email'>>;
+export type UpdateUserData = Partial<
+  Pick<User, 'name' | 'email' | 'isPushkinCardConnected'>
+>;

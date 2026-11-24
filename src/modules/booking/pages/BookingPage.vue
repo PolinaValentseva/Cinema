@@ -3,11 +3,13 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+
 import { useAuthStore } from '@/stores/auth';
 import { usePaymentStore } from '@/stores/payment';
 import { useSeatsStore } from '@/stores/seats';
 import { useSessionsStore } from '@/stores/sessions';
 
+import { bankCardApi, movieApi } from '@/services/mock-api';
 import type { PaymentMethod } from '@/types';
 
 const route = useRoute();
@@ -22,6 +24,27 @@ const showPaymentPanel = ref(false);
 const paymentResult = ref<'success' | 'error' | null>(null);
 
 const selectedPaymentMethod = ref<PaymentMethod>('bank-card');
+
+const hasBankCard = ref(false);
+const isPushkinCardAvailable = ref(false);
+
+const isAdultFilm = ref(false);
+const isAgeConfirmed = ref(false);
+const showAgeModal = ref(false);
+
+const isPushkinCardConnected = computed(
+  () => authStore.user?.isPushkinCardConnected ?? false,
+);
+
+const canUseBankCard = computed(() => hasBankCard.value);
+
+const canUsePushkinCard = computed(
+  () => isPushkinCardAvailable.value && isPushkinCardConnected.value,
+);
+
+const canUseAnyPaymentMethod = computed(
+  () => hasBankCard.value || canUsePushkinCard.value,
+);
 
 const seatRows = computed(() => {
   const rows = new Map<number, typeof seatsStore.seats>();
@@ -59,6 +82,39 @@ const canPay = computed(
     !paymentStore.isLoading,
 );
 
+function redirectToFinances() {
+  router.push("/profile/finances")
+}
+
+async function loadPaymentMethods(): Promise<void> {
+  const userId = authStore.user?.id;
+  const session = sessionsStore.currentSession;
+
+  hasBankCard.value = false;
+  isPushkinCardAvailable.value = false;
+
+  if (!userId || !session) {
+    return;
+  }
+
+  try {
+    const [cards, movie] = await Promise.all([
+      bankCardApi.getAll(userId),
+      movieApi.getById(session.movieId),
+    ]);
+
+    hasBankCard.value = cards.length > 0;
+    isPushkinCardAvailable.value =
+      movie?.isPushkinCardAvailable ?? false;
+
+    isAdultFilm.value = movie?.ageRating === '18+';
+      isAgeConfirmed.value = false;
+  } catch {
+    hasBankCard.value = false;
+    isPushkinCardAvailable.value = false;
+  }
+}
+
 function formatSessionDate(date: string): string {
   return new Date(date).toLocaleString('ru-RU', {
     day: 'numeric',
@@ -82,7 +138,24 @@ function closePaymentPanel(): void {
   showPaymentPanel.value = false;
 }
 
+function confirmAge(): void {
+  isAgeConfirmed.value = true;
+  showAgeModal.value = false;
+  handlePayment();
+}
+
+function rejectAge(): void {
+  showAgeModal.value = false;
+  closePaymentPanel();
+  router.push({ name: 'movies' });
+}
+
 async function handlePayment(): Promise<void> {
+  if (isAdultFilm.value && !isAgeConfirmed.value) {
+    showAgeModal.value = true;
+    return;
+  }
+
   const userId = authStore.user?.id;
   const session = sessionsStore.currentSession;
   const selectedSeats = seatsStore.selectedSeats;
@@ -113,6 +186,7 @@ async function handlePayment(): Promise<void> {
 function retryPayment(): void {
   paymentStore.reset();
   paymentResult.value = null;
+  isAgeConfirmed.value = false;
   showPaymentPanel.value = true;
 }
 
@@ -128,12 +202,23 @@ watch(
     paymentStore.reset();
     paymentResult.value = null;
     showPaymentPanel.value = false;
+    isAgeConfirmed.value = false;
+    showAgeModal.value = false;
+    isAdultFilm.value = false;
 
     try {
       await Promise.all([
         sessionsStore.fetchSessionById(id),
         seatsStore.fetchSeats(id),
       ]);
+
+      await loadPaymentMethods();
+
+      if (canUseBankCard.value) {
+        selectedPaymentMethod.value = 'bank-card';
+      } else if (canUsePushkinCard.value) {
+        selectedPaymentMethod.value = 'pushkin-card';
+      }
     } catch {
       // Ошибки отображаются на странице.
     }
@@ -314,6 +399,7 @@ watch(
 
             <div class="payment-methods">
               <button
+                v-if="hasBankCard"
                 type="button"
                 class="payment-method"
                 :class="{
@@ -336,13 +422,16 @@ watch(
               </button>
 
               <button
+                v-if="isPushkinCardAvailable"
                 type="button"
                 class="payment-method"
                 :class="{
                   'payment-method--selected':
                     selectedPaymentMethod === 'pushkin-card',
+                  'payment-method--disabled': !isPushkinCardConnected,
                 }"
                 :aria-pressed="selectedPaymentMethod === 'pushkin-card'"
+                :disabled="!isPushkinCardConnected"
                 @click="selectedPaymentMethod = 'pushkin-card'"
               >
                 <span class="payment-method__icon">
@@ -351,7 +440,12 @@ watch(
 
                 <span class="payment-method__content">
                   <strong>Пушкинская карта</strong>
-                  <span>Оплата Пушкинской картой</span>
+                  <span v-if="isPushkinCardConnected">
+                    Оплата Пушкинской картой
+                  </span>
+                  <span v-else>
+                    Сначала подключите Пушкинскую карту
+                  </span>
                 </span>
 
                 <span class="payment-method__radio"></span>
@@ -361,9 +455,15 @@ watch(
             <button
               type="button"
               class="payment-sheet__add-method"
+              @click="redirectToFinances"
             >
               + Добавить другой способ оплаты
             </button>
+
+            <p v-if="!canUseAnyPaymentMethod" class="payment-methods__empty">
+              Добавьте банковскую карту или подключите Пушкинскую карту,
+              чтобы оплатить заказ.
+            </p>
 
             <div class="payment-sheet__footer">
               <div class="payment-sheet__total">
@@ -374,7 +474,12 @@ watch(
               <button
                 type="button"
                 class="payment-sheet__pay-button"
-                :disabled="paymentStore.isLoading"
+                :disabled="
+                  paymentStore.isLoading ||
+                  !canUseAnyPaymentMethod ||
+                  (selectedPaymentMethod === 'bank-card' && !canUseBankCard) ||
+                  (selectedPaymentMethod === 'pushkin-card' && !canUsePushkinCard)
+                "
                 @click="handlePayment"
               >
                 <template v-if="paymentStore.isLoading">
@@ -444,6 +549,55 @@ watch(
       </div>
     </Transition>
   </main>
+
+  <Transition name="payment-overlay">
+    <div
+      v-if="showAgeModal"
+      class="payment-overlay"
+      @click.self="showAgeModal = false"
+    >
+      <section
+        class="age-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="age-modal-title"
+      >
+        <div class="age-modal__icon">
+          <icon name="shield-alert" />
+        </div>
+
+        <h2 id="age-modal-title">Подтверждение возраста</h2>
+
+        <p>
+          Вам уже исполнилось 18 лет?
+        </p>
+
+        <p class="age-modal__warning">
+          Фильм предназначен только для зрителей старше 18 лет.
+          При входе в кинотеатр у вас могут попросить документ,
+          подтверждающий возраст.
+        </p>
+
+        <div class="age-modal__actions">
+          <button
+            type="button"
+            class="age-modal__confirm"
+            @click="confirmAge"
+          >
+            Да, мне есть 18 лет
+          </button>
+
+          <button
+            type="button"
+            class="age-modal__reject"
+            @click="rejectAge"
+          >
+            Нет, мне нет 18 лет
+          </button>
+        </div>
+      </section>
+    </div>
+  </Transition>
 </template>
 
 <style scoped lang="scss">
@@ -894,6 +1048,82 @@ watch(
 .payment-sheet-enter-from,
 .payment-sheet-leave-to {
   transform: translateY(100%);
+}
+
+.age-modal {
+  width: min(100% - 32px, 440px);
+  padding: 32px;
+  border-radius: 24px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #222);
+  text-align: center;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 20%);
+}
+
+.age-modal__icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: rgb(220 53 69 / 10%);
+  color: #dc3545;
+  font-size: 30px;
+}
+
+.age-modal h2 {
+  margin: 0 0 16px;
+  font-size: 24px;
+}
+
+.age-modal > p {
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.age-modal__warning {
+  color: var(--color-text-secondary, #777);
+  font-size: 14px;
+}
+
+.age-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.age-modal__actions button {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.age-modal__confirm {
+  background: var(--color-primary, #222);
+  color: #fff;
+}
+
+.age-modal__reject {
+  background: var(--color-background, #f1f1f1);
+  color: var(--color-text, #222);
+}
+
+@media (max-width: 480px) {
+  .age-modal {
+    padding: 24px;
+  }
+
+  .age-modal h2 {
+    font-size: 21px;
+  }
 }
 
 @media (max-width: 600px) {

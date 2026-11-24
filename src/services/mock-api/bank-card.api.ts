@@ -3,16 +3,23 @@ import type { AddBankCardData, BankCard } from '@/types';
 
 import { storage, STORAGE_KEYS } from '@/services/storage';
 
-function getCards(): BankCard[] {
-  return storage.get<BankCard[]>(STORAGE_KEYS.BANK_CARDS) ?? [];
+function getCards(userId: BankCard['userId']): BankCard[] {
+  return (
+    storage
+      .get<BankCard[]>(STORAGE_KEYS.BANK_CARDS)
+      ?.filter((card) => card.userId === userId) ?? []
+  );
 }
 
 export const bankCardApi = {
-  async getAll(): Promise<BankCard[]> {
-    return getCards();
+  async getAll(userId: BankCard['userId']): Promise<BankCard[]> {
+    return getCards(userId);
   },
 
-  async add(data: AddBankCardData): Promise<BankCard> {
+  async add(
+    userId: BankCard['userId'],
+    data: AddBankCardData,
+  ): Promise<BankCard> {
     const cardNumber = data.cardNumber.replace(/\s/g, '');
 
     if (!/^\d{12,19}$/.test(cardNumber)) {
@@ -25,6 +32,7 @@ export const bankCardApi = {
 
     const card: BankCard = {
       id: crypto.randomUUID(),
+      userId,
       bankName: data.bankName.trim(),
       holderName: data.holderName.trim().toUpperCase(),
       lastFourDigits: cardNumber.slice(-4),
@@ -35,13 +43,29 @@ export const bankCardApi = {
       throw new Error('Заполните все поля');
     }
 
-    storage.set(STORAGE_KEYS.BANK_CARDS, [...getCards(), card]);
+    storage.set(
+      STORAGE_KEYS.BANK_CARDS,
+      [
+        ...(storage.get<BankCard[]>(STORAGE_KEYS.BANK_CARDS) ?? []),
+        card,
+      ],
+    );
 
     return card;
   },
 
-  async remove(cardId: string): Promise<void> {
-    const cards = getCards().filter((card) => card.id !== cardId);
-    storage.set(STORAGE_KEYS.BANK_CARDS, cards);
+  async remove(
+    cardId: string,
+    userId: BankCard['userId'],
+  ): Promise<void> {
+    const cards =
+      storage.get<BankCard[]>(STORAGE_KEYS.BANK_CARDS) ?? [];
+
+    storage.set(
+      STORAGE_KEYS.BANK_CARDS,
+      cards.filter(
+        (card) => !(card.id === cardId && card.userId === userId),
+      ),
+    );
   },
 };

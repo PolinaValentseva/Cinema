@@ -39,6 +39,7 @@ export const authApi = {
       id: crypto.randomUUID(),
       name: data.name.trim(),
       email,
+      isPushkinCardConnected: false,
       password: data.password,
     };
 
@@ -107,6 +108,8 @@ export const authApi = {
       ...currentUser,
       name,
       email,
+      isPushkinCardConnected:
+        data.isPushkinCardConnected ?? currentUser.isPushkinCardConnected,
     };
 
     users[userIndex] = updatedUser;

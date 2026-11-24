@@ -3,6 +3,7 @@ import type { ID } from './common';
 
 export interface BankCard {
   id: ID;
+  userId: ID;
   bankName: string;
   holderName: string;
   lastFourDigits: string;

@@ -3,7 +3,6 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import BaseButton from '@/components/ui/BaseButton.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
@@ -72,10 +71,6 @@ async function handleSubmit(): Promise<void> {
       <p v-if="authStore.error" class="auth-form__error">
         {{ authStore.error }}
       </p>
-
-      <BaseButton variant="secondary" size="large">
-        Войти
-      </BaseButton>
 
       <button
         class="auth-form__button"

@@ -101,11 +101,12 @@ const filteredMovies = computed(() => {
       selectedGenre.value === 'Все' ||
       movie.genres.includes(selectedGenre.value);
 
-    // Пока у сеансов нет отдельного поля формата и способа оплаты.
-    // Поэтому эти параметры будут визуальными фильтрами
-    // до появления соответствующих данных.
+    const matchesAdditional =
+      selectedAdditional.value === 'Все' ||
+      (selectedAdditional.value === 'Пушкинская карта' &&
+        movie.isPushkinCardAvailable);
 
-    return matchesGenre;
+    return matchesGenre && matchesAdditional;
   });
 });
 

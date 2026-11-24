@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ChevronLeft, Plus, Trash2 } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
@@ -48,7 +47,7 @@ onMounted(async () => {
 
   try {
     const [loadedCards, loadedPayments, loadedOrders] = await Promise.all([
-      bankCardApi.getAll(),
+      bankCardApi.getAll(authStore.user.id),
       paymentApi.getAll(),
       orderApi.getByUserId(authStore.user.id),
     ]);
@@ -102,7 +101,7 @@ async function handleAddCard(): Promise<void> {
   isSaving.value = true;
 
   try {
-    const card = await bankCardApi.add({
+    const card = await bankCardApi.add(authStore.user.id, {
       bankName: bankName.value,
       holderName: holderName.value,
       cardNumber: cardNumber.value,
@@ -127,7 +126,10 @@ async function handleAddCard(): Promise<void> {
 }
 
 async function handleRemoveCard(cardId: string): Promise<void> {
-  await bankCardApi.remove(cardId);
+  if (!authStore.user) return;
+
+  await bankCardApi.remove(cardId, authStore.user.id);
+
   cards.value = cards.value.filter((card) => card.id !== cardId);
 }
 </script>

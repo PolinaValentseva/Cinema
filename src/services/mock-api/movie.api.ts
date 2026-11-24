@@ -15,6 +15,7 @@ const initialMovies: Movie[] = [
     poster: 'https://placehold.co/300x450/171717/FFFFFF?text=Inception',
     duration: 148,
     ageRating: '12+',
+    isPushkinCardAvailable: false,
     genres: ['Фантастика', 'Боевик', 'Триллер'],
   },
   {
@@ -25,6 +26,7 @@ const initialMovies: Movie[] = [
     poster: 'https://placehold.co/300x450/171717/FFFFFF?text=Interstellar',
     duration: 169,
     ageRating: '12+',
+    isPushkinCardAvailable: true,
     genres: ['Фантастика', 'Драма', 'Приключения'],
   },
   {
@@ -34,7 +36,8 @@ const initialMovies: Movie[] = [
       'История дружбы и надежды двух заключённых, которые пытаются сохранить веру в свободу.',
     poster: 'https://placehold.co/300x450/171717/FFFFFF?text=Shawshank',
     duration: 142,
-    ageRating: '16+',
+    ageRating: '18+',
+    isPushkinCardAvailable: true,
     genres: ['Драма'],
   },
 ];
