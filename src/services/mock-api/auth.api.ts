@@ -149,4 +149,47 @@ export const authApi = {
 
     storage.set(STORAGE_KEYS.USERS, users);
   },
+
+  async checkEmail(email: string): Promise<void> {
+    await delay();
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const userExists = getUsers().some(
+      (item) => item.email === normalizedEmail,
+    );
+
+    if (!userExists) {
+      throw new Error('Пользователь с такой почтой не найден');
+    }
+  },
+
+  async resetPassword(
+    email: string,
+    newPassword: string,
+  ): Promise<void> {
+    await delay();
+
+    const users = getUsers();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const userIndex = users.findIndex(
+      (item) => item.email === normalizedEmail,
+    );
+
+    if (userIndex === -1) {
+      throw new Error('Пользователь с такой почтой не найден');
+    }
+
+    if (newPassword.length < 6) {
+      throw new Error('Новый пароль должен содержать минимум 6 символов');
+    }
+
+    users[userIndex] = {
+      ...users[userIndex],
+      password: newPassword,
+    };
+
+    storage.set(STORAGE_KEYS.USERS, users);
+  },
 };

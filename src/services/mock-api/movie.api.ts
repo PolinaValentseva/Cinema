@@ -9,36 +9,36 @@ const delay = (ms = 300) =>
 const initialMovies: Movie[] = [
   {
     id: 'movie-1',
-    title: 'Начало',
+    title: 'Девятая планета',
     description:
-      'Профессиональный вор проникает в подсознание людей, чтобы похищать секреты. Теперь ему предстоит выполнить практически невозможную задачу.',
-    poster: 'https://placehold.co/300x450/171717/FFFFFF?text=Inception',
-    duration: 148,
-    ageRating: '12+',
+      'Бывший военный возвращается на далёкую планету за потерянной любовью. Фантастический боевик с Юрой Борисовым',
+    poster: "posters/9-planeta.jpg",
+    duration: 103,
+    ageRating: '18+',
     isPushkinCardAvailable: false,
-    genres: ['Фантастика', 'Боевик', 'Триллер'],
+    genres: ['Фантастика'],
   },
   {
     id: 'movie-2',
-    title: 'Интерстеллар',
+    title: 'Приключения мамонтёнка',
     description:
       'Группа исследователей отправляется за пределы нашей галактики, чтобы найти человечеству новый дом.',
-    poster: 'https://placehold.co/300x450/171717/FFFFFF?text=Interstellar',
-    duration: 169,
-    ageRating: '12+',
+    poster: "posters/mamontenok.jpg",
+    duration: 79,
+    ageRating: '6+',
     isPushkinCardAvailable: true,
-    genres: ['Фантастика', 'Драма', 'Приключения'],
+    genres: ['Анимация'],
   },
   {
     id: 'movie-3',
-    title: 'Побег из Шоушенка',
+    title: 'Руки вверх! 2',
     description:
       'История дружбы и надежды двух заключённых, которые пытаются сохранить веру в свободу.',
-    poster: 'https://placehold.co/300x450/171717/FFFFFF?text=Shawshank',
-    duration: 142,
-    ageRating: '18+',
+    poster: "posters/ruki-vverh.jpg",
+    duration: 101,
+    ageRating: '16+',
     isPushkinCardAvailable: true,
-    genres: ['Драма'],
+    genres: ['Биография'],
   },
 ];
 

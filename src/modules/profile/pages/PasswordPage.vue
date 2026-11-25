@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ChevronLeft, Eye, EyeOff, MailCheck } from 'lucide-vue-next';
 import { computed, onUnmounted, ref } from 'vue';
@@ -171,7 +170,7 @@ async function confirmPasswordChange(): Promise<void> {
     </header>
 
     <form class="password-form" @submit.prevent="handleSubmit">
-      <div class="form-field">
+      <div class="form-field form-field-password">
         <label for="current-password">Текущий пароль</label>
 
         <div class="password-input">
@@ -193,7 +192,15 @@ async function confirmPasswordChange(): Promise<void> {
             <Eye v-else :size="20" />
           </button>
         </div>
+
+        <RouterLink
+          to="/forgot-password?from=profile"
+          class="forgot-password-link"
+        >
+          Забыли текущий пароль?
+        </RouterLink>
       </div>
+
 
       <div class="form-field">
         <label for="new-password">Новый пароль</label>
@@ -409,6 +416,10 @@ async function confirmPasswordChange(): Promise<void> {
     font-weight: 500;
     color: #333;
   }
+
+  &-password {
+    margin-bottom: 10px;
+  }
 }
 
 .password-input {
@@ -606,6 +617,18 @@ async function confirmPasswordChange(): Promise<void> {
 .verification-modal__resend {
   background: #f1f1f1;
   color: #171717;
+}
+
+.forgot-password-link {
+  align-self: flex-end;
+  margin-top: -2px;
+  color: #7664d8;
+  font-size: 13px;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 @media (max-width: 600px) {

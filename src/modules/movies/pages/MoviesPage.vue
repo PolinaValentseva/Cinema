@@ -12,8 +12,11 @@ import { ChevronDown, Search } from 'lucide-vue-next';
 import { useMoviesStore } from '@/stores/movies';
 import { useSessionsStore } from '@/stores/sessions';
 
+import { useImage } from '@/composables/useProductImage';
+
 const moviesStore = useMoviesStore();
 const sessionsStore = useSessionsStore();
+const { getImagePath } = useImage()
 
 const isLoading = computed(
   () => moviesStore.isLoading || sessionsStore.isLoading,
@@ -279,7 +282,7 @@ onMounted(async () => {
   <main class="movies-page">
     <div class="movies-page__container">
       <header class="movies-header">
-        <h1>Афиша</h1>
+        <h1 class="title">Афиша</h1>
 
         <RouterLink
           to="/search"
@@ -394,11 +397,11 @@ onMounted(async () => {
             @click.prevent="goToSlide(index)"
             @click="handleSlideClick"
           >
-            <img :src="movie.poster" :alt="movie.title" />
+            <img :src="getImagePath(movie.poster)" :alt="movie.title" class="movies-carousel__slide-image"/>
 
-            <div class="movies-carousel__caption">
+            <!-- <div class="movies-carousel__caption">
               {{ movie.title }}
-            </div>
+            </div> -->
           </RouterLink>
         </div>
 
@@ -450,7 +453,7 @@ onMounted(async () => {
               class="movies-catalog__info"
             >
               <img
-                :src="movie.poster"
+                :src="getImagePath(movie.poster)"
                 :alt="movie.title"
                 class="movies-catalog__poster"
               />
@@ -508,6 +511,13 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 
+.title {
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: #1e1b1c;
+}
+
 .movies-page {
   min-height: 100vh;
   padding: 30px 20px;
@@ -564,7 +574,7 @@ onMounted(async () => {
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
 
   &__controls {
     display: flex;
@@ -584,18 +594,19 @@ onMounted(async () => {
   &__trigger {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 11px 16px;
-    color: #222;
-    background: #f3f3f3;
+    gap: 6px;
+    padding: 10px 18px;
+    font-size: 14px;
+    color: #fff;
+    background: #1e1b1c;
     border: none;
-    border-radius: 10px;
+    border-radius: 14px;
     cursor: pointer;
     transition: background 0.2s;
 
     &:hover,
     &--active {
-      background: #e8e8e8;
+      background: #443e40;
     }
   }
 
@@ -608,11 +619,11 @@ onMounted(async () => {
   }
 
   &__option {
-    padding: 9px 14px;
-    color: #333;
+    padding: 10px 16px;
+    color: #1e1b1c;
     background: #f3f3f3;
     border: none;
-    border-radius: 8px;
+    border-radius: 19px;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
 
@@ -633,7 +644,7 @@ onMounted(async () => {
 
 
 .movies-carousel {
-  margin: 20px 0 50px;
+  margin-bottom: 35px;
 
   &__track {
     position: relative;
@@ -681,41 +692,47 @@ onMounted(async () => {
       opacity: 1;
       pointer-events: auto;
       transform: translate(-50%, -50%) scale(1);
+      box-shadow: 0 4px 28px 0 rgba(0, 0, 0, 0.4);
     }
 
     &--left {
       z-index: 2;
-      opacity: 0.55;
-      filter: brightness(0.65);
+      opacity: 0.92;
+      filter: brightness(0.6);
       pointer-events: auto;
       transform: translate(calc(-50% - 190px), -50%) scale(0.82);
+      box-shadow: 0 4px 7px 0 rgba(0, 0, 0, 0.2);
     }
 
     &--right {
       z-index: 2;
-      opacity: 0.55;
-      filter: brightness(0.65);
+      opacity: 0.92;
+      filter: brightness(0.6);
       pointer-events: auto;
       transform: translate(calc(-50% + 190px), -50%) scale(0.82);
+      box-shadow: 0 4px 7px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    &-image {
+      object-fit: cover;
     }
   }
 
-  &__caption {
-    padding: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    text-align: center;
-  }
+  // &__caption {
+  //   padding: 12px;
+  //   font-size: 15px;
+  //   font-weight: 600;
+  //   text-align: center;
+  // }
 
   &__indicators {
     display: flex;
     justify-content: center;
     gap: 8px;
-    margin-top: 20px;
   }
 
   &__indicator {
-    width: 24px;
+    width: 20px;
     height: 5px;
     padding: 0;
     background: #ddd;
@@ -725,8 +742,8 @@ onMounted(async () => {
     transition: background 0.2s, width 0.2s;
 
     &--active {
-      width: 42px;
-      background: #222;
+      width: 30px;
+      background: #E50000;
     }
   }
 }
@@ -745,7 +762,8 @@ onMounted(async () => {
 
   &__content {
     display: grid;
-    grid-template-columns: 120px minmax(0, 1fr);
+    min-height: 179px;
+    grid-template-columns: 126px minmax(0, 1fr);
     grid-template-rows: 1fr auto;
     column-gap: 20px;
     row-gap: 16px;
@@ -756,6 +774,8 @@ onMounted(async () => {
   }
 
   &__poster {
+    height: 100%;
+    border-radius: 14px;
     grid-column: 1;
     grid-row: 1 / 3;
   }
@@ -777,9 +797,11 @@ onMounted(async () => {
   }
 
   &__title {
+    font-family: "Bebas Neue Cyrillic";
     margin: 0;
-    font-size: 20px;
-    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 32px;
+    font-weight: normal;
   }
 
   &__meta {
@@ -864,22 +886,22 @@ onMounted(async () => {
 @media (max-width: 600px) {
   .movies-carousel {
     &__track {
-      height: 320px;
+      height: 310px;
     }
 
     &__slide {
-      width: 190px;
+      width: 180px;
 
       img {
-        height: 270px;
+        height: 257px;
       }
 
       &--left {
-        transform: translate(calc(-50% - 125px), -50%) scale(0.72);
+        transform: translate(calc(-50% - 125px), -50%) scale(0.85);
       }
 
       &--right {
-        transform: translate(calc(-50% + 125px), -50%) scale(0.72);
+        transform: translate(calc(-50% + 125px), -50%) scale(0.85);
       }
     }
   }

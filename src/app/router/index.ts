@@ -25,6 +25,15 @@ const routes = [
     },
   },
   {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: () =>
+      import('@/modules/auth/pages/ForgotPasswordPage.vue'),
+    meta: {
+      title: 'Восстановление пароля',
+    },
+  },
+  {
     path: '/register',
     name: 'register',
     component: () => import('@/modules/auth/pages/RegisterPage.vue'),

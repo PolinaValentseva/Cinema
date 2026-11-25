@@ -25,6 +25,13 @@
         />
       </label>
 
+      <RouterLink
+        to="/forgot-password"
+        class="auth-form__forgot-password"
+      >
+        Забыли пароль?
+      </RouterLink>
+
       <p v-if="authStore.error" class="auth-form__error">
         {{ authStore.error }}
       </p>
@@ -152,6 +159,18 @@ async function handleSubmit(): Promise<void> {
       color: inherit;
       font-weight: 600;
     }
+  }
+}
+
+.auth-form__forgot-password {
+  align-self: flex-end;
+  margin-top: -10px;
+  color: #7664d8;
+  font-size: 13px;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
   }
 }
 </style>

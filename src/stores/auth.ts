@@ -116,6 +116,41 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function resetPassword(
+    email: string,
+    newPassword: string,
+  ): Promise<void> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      await authApi.resetPassword(email, newPassword);
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : 'Не удалось восстановить пароль';
+
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function checkEmail(email: string): Promise<void> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      await authApi.checkEmail(email);
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : 'Не удалось проверить почту';
+
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   function logout(): void {
     user.value = null;
     storage.remove(STORAGE_KEYS.AUTH_SESSION);
@@ -154,6 +189,8 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     updateProfile,
     changePassword,
+    resetPassword,
+    checkEmail,
     logout,
     initialize,
   };

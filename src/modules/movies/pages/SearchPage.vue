@@ -3,7 +3,10 @@
 import { useMoviesStore } from '@/stores/movies';
 import { computed, onMounted, ref } from 'vue';
 
+import { useImage } from '@/composables/useProductImage';
+
 const moviesStore = useMoviesStore();
+const { getImagePath } = useImage()
 
 const searchQuery = ref('');
 
@@ -86,7 +89,7 @@ onMounted(async () => {
             class="movie-card"
           >
             <img
-              :src="movie.poster"
+              :src="getImagePath(movie.poster)"
               :alt="movie.title"
               class="movie-card__poster"
             />
